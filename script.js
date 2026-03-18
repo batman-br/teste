@@ -1,102 +1,98 @@
-/* script.js */
+/* script.js - Versão Corrigida com Espaçamento Simétrico */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
-// Definições da Grade (Ajuste para tamanho do canvas)
+// Configurações da Planta Baixa
 const colunasVerticais = 8;
 const corredoresHorizontais = 3;
-const margemPerimetral = 50; // Corredor ao redor
-const larguraPrateleira = 80; // Largura do bloco de prateleiras
-const alturaSegmentoPrateleira = 150; // Altura entre corredores H
-const larguraCorredorVertical = 40; // Espaço entre blocos de prateleiras
+const margemPerimetral = 60; 
+const larguraPrateleira = 80;
+const alturaSegmentoPrateleira = 160; 
+const larguraCorredor = 50; // Espaço padrão para corredores V e H
 
-// Cores Suaves
-const corPrateleira = '#87CEFA'; // LightSkyBlue
-const corLampadaApagada = 'rgba(200, 200, 200, 0.5)'; // Cinza translúcido
+// Cores
+const corPrateleira = '#87CEFA';
+const corLampadaApagada = 'rgba(200, 200, 200, 0.5)';
 
-// Arrays para guardar os objetos
 let prateleiras = [];
 let lampadas = [];
 
 function inicializarMapa() {
-    // 1. Criar as Prateleiras (Blocos)
+    prateleiras = [];
+    lampadas = [];
+
+    // 1. Criar as Prateleiras e Lâmpadas dos Corredores Verticais
     for (let c = 0; c < colunasVerticais - 1; c++) {
+        let xBase = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) + larguraPrateleira + (larguraCorredor / 2);
+        
         for (let r = 0; r < corredoresHorizontais + 1; r++) {
-            // Calcula posição X e Y do bloco
-            let x = margemPerimetral + (c * (larguraPrateleira + larguraCorredorVertical));
-            let y = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredorVertical)); // Usando larguraCorredorVertical como altura do H tbm
+            let xPrat = margemPerimetral + (c * (larguraPrateleira + larguraCorredor));
+            let yPrat = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor));
 
-            // Define o retângulo da prateleira
-            let prateleira = {
-                x: x, y: y,
-                width: larguraPrateleira,
-                height: alturaSegmentoPrateleira,
+            // Adiciona o bloco da prateleira
+            prateleiras.push({
+                x: xPrat, y: yPrat,
+                width: larguraPrateleira, height: alturaSegmentoPrateleira,
                 color: corPrateleira
-            };
-            prateleiras.push(prateleira);
+            });
 
-            // 2. Adicionar Lâmpadas nas Prateleiras (4 por segmento)
-            let espacamentoLampadas = alturaSegmentoPrateleira / 5;
-            for (let l = 1; l <= 4; l++) {
-                // Lâmpada no corredor vertical esquerdo da prateleira
-                let lampadaEsquerda = {
-                    x: x - (larguraCorredorVertical / 2),
-                    y: y + (l * espacamentoLampadas),
-                    radius: 5, color: corLampadaApagada
-                };
-                lampadas.push(lampadaEsquerda);
+            // Adiciona 4 lâmpadas por segmento de corredor (espaços iguais)
+            // Calculamos o início e fim do segmento para distribuir as 4 luzes
+            let yInicio = yPrat;
+            let yFim = yPrat + alturaSegmentoPrateleira;
+            let passo = alturaSegmentoPrateleira / 5; // Divide em 5 espaços para ter 4 pontos internos
 
-                // Lâmpada no corredor vertical direito da prateleira
-                let lampadaDireita = {
-                    x: x + larguraPrateleira + (larguraCorredorVertical / 2),
-                    y: y + (l * espacamentoLampadas),
-                    radius: 5, color: corLampadaApagada
-                };
-                lampadas.push(lampadaDireita);
+            for (let i = 1; i <= 4; i++) {
+                // Lâmpada no corredor à esquerda da prateleira (se for a primeira coluna)
+                if (c === 0) {
+                    lampadas.push({ x: xPrat - (larguraCorredor/2), y: yPrat + (i * passo), radius: 5 });
+                }
+                // Lâmpada no corredor à direita da prateleira
+                lampadas.push({ x: xPrat + larguraPrateleira + (larguraCorredor/2), y: yPrat + (i * passo), radius: 5 });
             }
         }
     }
 
-    // 3. Adicionar Lâmpadas nos Cruzamentos (8x3)
+    // 2. Adicionar Lâmpadas nos Cruzamentos (Nós da Matriz)
+    // Isso garante que cada encontro de corredor tenha uma lâmpada central
     for (let c = 0; c < colunasVerticais; c++) {
         for (let r = 0; r < corredoresHorizontais; r++) {
-            let x = margemPerimetral + (c * (larguraPrateleira + larguraCorredorVertical));
-            let y = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredorVertical)) - (larguraCorredorVertical / 2); // Centralizado no H
+            let x = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) - (larguraCorredor / 2);
+            if (c === colunasVerticais - 1) x = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) - (larguraCorredor / 2);
+            
+            let y = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) + alturaSegmentoPrateleira + (larguraCorredor / 2);
 
-            let lampadaCruzamento = {
-                x: x - (larguraCorredorVertical / 2),
-                y: y + alturaSegmentoPrateleira + (larguraCorredorVertical / 2),
-                radius: 7, color: corLampadaApagada // Lâmpada maior no cruzamento
-            };
-            lampadas.push(lampadaCruzamento);
+            lampadas.push({
+                x: x,
+                y: y,
+                radius: 7, // Destaque para o cruzamento
+                isCruzamento: true
+            });
         }
     }
 
-    // 4. Desenhar tudo
     desenharMapa();
 }
 
 function desenharMapa() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Desenha Prateleiras
-    prateleiras.forEach(prateleira => {
-        ctx.fillStyle = prateleira.color;
-        ctx.fillRect(prateleira.x, prateleira.y, prateleira.width, prateleira.height);
-        // Borda suave
+    prateleiras.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.width, p.height);
         ctx.strokeStyle = '#6bb9e8';
-        ctx.strokeRect(prateleira.x, prateleira.y, prateleira.width, prateleira.height);
+        ctx.strokeRect(p.x, p.y, p.width, p.height);
     });
 
     // Desenha Lâmpadas
-    lampadas.forEach(lampada => {
+    lampadas.forEach(l => {
         ctx.beginPath();
-        ctx.arc(lampada.x, lampada.y, lampada.radius, 0, Math.PI * 2);
-        ctx.fillStyle = lampada.color;
+        ctx.arc(l.x, l.y, l.radius, 0, Math.PI * 2);
+        ctx.fillStyle = corLampadaApagada;
         ctx.fill();
         ctx.closePath();
     });
 }
 
-// Inicia o processo
 inicializarMapa();
