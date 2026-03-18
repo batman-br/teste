@@ -1,13 +1,13 @@
-/* script.js - Versão Alinhamento de Extremidades */
+/* script.js - Versão Alinhamento Total (H + V) */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
 const colunasVerticais = 8;
 const corredoresHorizontais = 3; 
 const margemPerimetral = 80; 
-const larguraPrateleira = 55; // Ajuste fino na largura
+const larguraPrateleira = 55; 
 const alturaSegmentoPrateleira = 180; 
-const larguraCorredor = 65; // Corredor um pouco mais largo para respiro
+const larguraCorredor = 65; 
 const raioLampada = 5;
 
 const corPrateleira = '#87CEFA';
@@ -20,7 +20,7 @@ function inicializarMapa() {
     prateleiras = [];
     lampadas = [];
 
-    // 1. Criar Prateleiras e Lâmpadas Verticais (Alinhadas às extremidades)
+    // 1. Criar Prateleiras e Lâmpadas Verticais (5 por segmento)
     for (let c = 0; c < colunasVerticais - 1; c++) {
         for (let r = 0; r < corredoresHorizontais + 1; r++) {
             let xPrat = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) + larguraCorredor/2;
@@ -32,13 +32,10 @@ function inicializarMapa() {
                 color: corPrateleira
             });
 
-            // Lâmpadas Verticais: 5 lâmpadas do topo à base da prateleira
+            // 5 Lâmpadas verticais: da extremidade superior à inferior
             for (let i = 0; i < 5; i++) {
                 let posY = yPrat + (i * (alturaSegmentoPrateleira / 4));
-                
-                // Corredor Esquerdo
                 lampadas.push({ x: xPrat - (larguraCorredor/2), y: posY, radius: raioLampada });
-                // Corredor Direito (apenas na última coluna de prateleiras)
                 if (c === colunasVerticais - 2) {
                     lampadas.push({ x: xPrat + larguraPrateleira + (larguraCorredor/2), y: posY, radius: raioLampada });
                 }
@@ -46,26 +43,30 @@ function inicializarMapa() {
         }
     }
 
-    // 2. Lâmpadas Horizontais (Cruzamentos + 2 Internas)
+    // 2. Lâmpadas Horizontais (Cruzamentos + 2 no vão da prateleira)
     for (let r = 0; r < corredoresHorizontais + 2; r++) {
-        let yCorredor = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) - (larguraCorredor / 2);
-        
-        // Ajuste para a última linha horizontal (corredor inferior)
-        if (r === corredoresHorizontais + 1) {
-             yCorredor = margemPerimetral + ((r-1) * (alturaSegmentoPrateleira + larguraCorredor)) + alturaSegmentoPrateleira + (larguraCorredor / 2);
+        // Cálculo do Y do corredor horizontal
+        let yCorredor;
+        if (r <= corredoresHorizontais) {
+            yCorredor = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) - (larguraCorredor / 2);
+        } else {
+            // Último corredor (inferior)
+            yCorredor = margemPerimetral + (corredoresHorizontais * (alturaSegmentoPrateleira + larguraCorredor)) + alturaSegmentoPrateleira + (larguraCorredor / 2);
         }
 
         for (let c = 0; c < colunasVerticais; c++) {
             let xCruzamento = margemPerimetral + (c * (larguraPrateleira + larguraCorredor));
             
-            // Lâmpada do Cruzamento
+            // Lâmpada do Cruzamento (ID de Nó)
             lampadas.push({ x: xCruzamento, y: yCorredor, radius: raioLampada });
 
-            // 2 Lâmpadas entre os cruzamentos (espaço da prateleira)
+            // 2 Lâmpadas horizontais entre cruzamentos (alinhadas com a prateleira)
             if (c < colunasVerticais - 1) {
-                let xInicioEspaco = xCruzamento + (larguraCorredor/2);
+                let xInicioPrat = xCruzamento + (larguraCorredor / 2);
+                // Dividimos a largura da prateleira para colocar as 2 luzes internas
+                // Para ficarem simétricas: 1/3 e 2/3 da largura
                 for (let j = 1; j <= 2; j++) {
-                    let posX = xCruzamento + (larguraCorredor/2) + (j * (larguraPrateleira / 3));
+                    let posX = xInicioPrat + (j * (larguraPrateleira / 3));
                     lampadas.push({ x: posX, y: yCorredor, radius: raioLampada });
                 }
             }
