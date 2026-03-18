@@ -1,4 +1,4 @@
-/* script.js - Versão Alinhamento Total (H + V) */
+/* script.js - Malha Integrada Sem Espaços */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -20,7 +20,7 @@ function inicializarMapa() {
     prateleiras = [];
     lampadas = [];
 
-    // 1. Criar Prateleiras e Lâmpadas Verticais (5 por segmento)
+    // 1. Criar as Prateleiras
     for (let c = 0; c < colunasVerticais - 1; c++) {
         for (let r = 0; r < corredoresHorizontais + 1; r++) {
             let xPrat = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) + larguraCorredor/2;
@@ -32,10 +32,12 @@ function inicializarMapa() {
                 color: corPrateleira
             });
 
-            // 5 Lâmpadas verticais: da extremidade superior à inferior
-            for (let i = 0; i < 5; i++) {
+            // Lâmpadas VERTICAIS INTERNAS (apenas as 3 do meio, pois as pontas são do corredor H)
+            for (let i = 1; i <= 3; i++) {
                 let posY = yPrat + (i * (alturaSegmentoPrateleira / 4));
+                // Corredor Esquerdo
                 lampadas.push({ x: xPrat - (larguraCorredor/2), y: posY, radius: raioLampada });
+                // Corredor Direito (última coluna)
                 if (c === colunasVerticais - 2) {
                     lampadas.push({ x: xPrat + larguraPrateleira + (larguraCorredor/2), y: posY, radius: raioLampada });
                 }
@@ -43,31 +45,22 @@ function inicializarMapa() {
         }
     }
 
-    // 2. Lâmpadas Horizontais (Cruzamentos + 2 no vão da prateleira)
+    // 2. Criar Corredores HORIZONTAIS (Cruzamentos + Lâmpadas de Prateleira)
     for (let r = 0; r < corredoresHorizontais + 2; r++) {
-        // Cálculo do Y do corredor horizontal
-        let yCorredor;
-        if (r <= corredoresHorizontais) {
-            yCorredor = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) - (larguraCorredor / 2);
-        } else {
-            // Último corredor (inferior)
-            yCorredor = margemPerimetral + (corredoresHorizontais * (alturaSegmentoPrateleira + larguraCorredor)) + alturaSegmentoPrateleira + (larguraCorredor / 2);
-        }
+        let yCorredor = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) - (larguraCorredor / 2);
 
         for (let c = 0; c < colunasVerticais; c++) {
             let xCruzamento = margemPerimetral + (c * (larguraPrateleira + larguraCorredor));
             
-            // Lâmpada do Cruzamento (ID de Nó)
+            // Lâmpada de CRUZAMENTO (Onde V e H se encontram)
             lampadas.push({ x: xCruzamento, y: yCorredor, radius: raioLampada });
 
-            // 2 Lâmpadas horizontais entre cruzamentos (alinhadas com a prateleira)
+            // 2 Lâmpadas HORIZONTAIS no vão da prateleira
             if (c < colunasVerticais - 1) {
                 let xInicioPrat = xCruzamento + (larguraCorredor / 2);
-                // Dividimos a largura da prateleira para colocar as 2 luzes internas
-                // Para ficarem simétricas: 1/3 e 2/3 da largura
+                let passoX = larguraPrateleira / 3;
                 for (let j = 1; j <= 2; j++) {
-                    let posX = xInicioPrat + (j * (larguraPrateleira / 3));
-                    lampadas.push({ x: posX, y: yCorredor, radius: raioLampada });
+                    lampadas.push({ x: xInicioPrat + (j * passoX), y: yCorredor, radius: raioLampada });
                 }
             }
         }
