@@ -1,4 +1,4 @@
-/* script.js - Versão Corrigida com Espaçamento Simétrico */
+/* script.js - Versão 5 Lâmpadas + Corredores Horizontais */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -9,6 +9,7 @@ const margemPerimetral = 60;
 const larguraPrateleira = 80;
 const alturaSegmentoPrateleira = 160; 
 const larguraCorredor = 50; // Espaço padrão para corredores V e H
+const raioLampada = 5; // Raio único para todas as lâmpadas
 
 // Cores
 const corPrateleira = '#87CEFA';
@@ -21,10 +22,8 @@ function inicializarMapa() {
     prateleiras = [];
     lampadas = [];
 
-    // 1. Criar as Prateleiras e Lâmpadas dos Corredores Verticais
+    // 1. Criar Prateleiras e Lâmpadas dos Corredores Verticais
     for (let c = 0; c < colunasVerticais - 1; c++) {
-        let xBase = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) + larguraPrateleira + (larguraCorredor / 2);
-        
         for (let r = 0; r < corredoresHorizontais + 1; r++) {
             let xPrat = margemPerimetral + (c * (larguraPrateleira + larguraCorredor));
             let yPrat = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor));
@@ -36,38 +35,51 @@ function inicializarMapa() {
                 color: corPrateleira
             });
 
-            // Adiciona 4 lâmpadas por segmento de corredor (espaços iguais)
-            // Calculamos o início e fim do segmento para distribuir as 4 luzes
+            // Adiciona 5 lâmpadas por segmento de corredor VERTICAL (espaços iguais)
+            // Calculamos o início e fim do segmento para distribuir as 5 luzes
             let yInicio = yPrat;
             let yFim = yPrat + alturaSegmentoPrateleira;
-            let passo = alturaSegmentoPrateleira / 5; // Divide em 5 espaços para ter 4 pontos internos
+            let passoY = alturaSegmentoPrateleira / 6; // Divide em 6 espaços para ter 5 pontos internos
 
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 5; i++) {
                 // Lâmpada no corredor à esquerda da prateleira (se for a primeira coluna)
                 if (c === 0) {
-                    lampadas.push({ x: xPrat - (larguraCorredor/2), y: yPrat + (i * passo), radius: 5 });
+                    lampadas.push({ x: xPrat - (larguraCorredor/2), y: yPrat + (i * passoY), radius: raioLampada });
                 }
                 // Lâmpada no corredor à direita da prateleira
-                lampadas.push({ x: xPrat + larguraPrateleira + (larguraCorredor/2), y: yPrat + (i * passo), radius: 5 });
+                lampadas.push({ x: xPrat + larguraPrateleira + (larguraCorredor/2), y: yPrat + (i * passoY), radius: raioLampada });
             }
         }
     }
 
-    // 2. Adicionar Lâmpadas nos Cruzamentos (Nós da Matriz)
-    // Isso garante que cada encontro de corredor tenha uma lâmpada central
-    for (let c = 0; c < colunasVerticais; c++) {
-        for (let r = 0; r < corredoresHorizontais; r++) {
-            let x = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) - (larguraCorredor / 2);
-            if (c === colunasVerticais - 1) x = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) - (larguraCorredor / 2);
-            
-            let y = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) + alturaSegmentoPrateleira + (larguraCorredor / 2);
+    // 2. Adicionar Lâmpadas nos Corredores Horizontais e Cruzamentos
+    for (let r = 0; r < corredoresHorizontais + 1; r++) {
+        let yCorredorH = margemPerimetral + (r * (alturaSegmentoPrateleira + larguraCorredor)) - (larguraCorredor / 2);
+        
+        // Ajuste para o corredor perimetral inferior
+        if (r === corredoresHorizontais) yCorredorH = canvas.height - margemPerimetral + (larguraCorredor / 2);
 
+        // Distribui lâmpadas ao longo do corredor horizontal
+        let numLampadasH = (colunasVerticais * larguraPrateleira) + ((colunasVerticais - 1) * larguraCorredor);
+        // let numLampadasH = colunasVerticais; // Simplificação: uma lâmpada por coluna/cruzamento
+        // let espacamentoH = canvas.width / (colunasVerticais + 1);
+
+        for (let c = 0; c < colunasVerticais; c++) {
+             let x = margemPerimetral + (c * (larguraPrateleira + larguraCorredor)) - (larguraCorredor / 2);
+            
+            // Adiciona lâmpada de cruzamento (com o mesmo tamanho)
             lampadas.push({
                 x: x,
-                y: y,
-                radius: 7, // Destaque para o cruzamento
+                y: yCorredorH,
+                radius: raioLampada, 
                 isCruzamento: true
             });
+            
+            // Adicionar lâmpadas intermediárias nos corredores horizontais (opcional para maior precisão)
+            // let espacamentoIntermediario = larguraPrateleira / 6;
+            // for(let i=1; i<=5; i++){
+            //     lampadas.push({x: x + (larguraCorredor/2) + (i*espacamentoIntermediario), y: yCorredorH, radius: raioLampada});
+            // }
         }
     }
 
