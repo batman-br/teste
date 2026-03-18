@@ -1,0 +1,39 @@
+/* style.css */
+body {
+    background-color: #f4f4f4; /* Cinza claro suave */
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    height: 100vh;
+}
+
+#legenda {
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#legenda h3 { margin-top: 0; color: #333; }
+#legenda ul { list-style-type: none; padding: 0; }
+#legenda li { margin-bottom: 8px; color: #555; }
+
+.cor-amostra {
+    width: 20px; height: 20px;
+    display: inline-block;
+    margin-right: 10px;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+canvas {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background-color: #ffffff;
+}
