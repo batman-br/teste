@@ -1,2 +1,25 @@
-<p>fsfsfs</p>
-<h1>adssdasda</h1>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulação: Matriz de Iluminação Preditiva</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="legenda">
+        <h3>Mapa do Pavilhão 8x3</h3>
+        <ul>
+            <li><span class="cor-amostra" style="background-color: #87CEFA; border: 1px solid #6bb9e8;"></span> Zona de Estocagem (Prateleira)</li>
+            <li><span class="cor-amostra" style="background-color: #ffffff; border: 1px solid #ddd;"></span> Área de Circulação (Corredor)</li>
+            <li><span class="cor-amostra" style="background-color: rgba(200, 200, 200, 0.5);"></span> Ponto de Luz (Apagado)</li>
+        </ul>
+        <small><i>Mova o mouse sobre o mapa para simular o operador (Próxima Fase)</i></small>
+    </div>
+
+    <canvas id="mapaCanvas" width="900" height="700"></canvas>
+
+    <script src="script.js"></script>
+</body>
+</html>
