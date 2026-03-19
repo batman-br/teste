@@ -8,12 +8,11 @@ const CONFIG = {
     MARGEM: 60,
 
     VELOCIDADE_OPERADOR: 2.5,  
-    RAIO_DETECCAO: 10, 
-    TEMPO_REATIVO_MS: 8000,   // Tempo fixo sem rastro
-    DISTANCIA_PREDITIVA: 5    // Quantas lâmpadas de projeção
+    RAIO_DETECCAO: 10,        // Mundo físico real
+    TEMPO_REATIVO_MS: 8000,   
+    DISTANCIA_PREDITIVA: 8    // Quantas lâmpadas à frente na sequência
 };
 
-// Cálculos de geometria das prateleiras
 CONFIG.CORREDOR_W = CONFIG.ESPACO_LAMPADA; 
 CONFIG.CORREDOR_H = CONFIG.ESPACO_LAMPADA;
 CONFIG.LARGURA_PRATELEIRA = CONFIG.ESPACO_LAMPADA * (CONFIG.LAMPADAS_HORIZONTAL + 1) - CONFIG.CORREDOR_W;
