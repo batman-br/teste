@@ -2,24 +2,32 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulação: Matriz de Iluminação Preditiva</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Matriz de Iluminação Preditiva</title>
+    <style>
+        body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        canvas { background: #fff; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: crosshair; }
+        #info-container { width: 1000px; margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; }
+        .legenda-item { display: inline-block; margin-right: 20px; }
+        .box { width: 15px; height: 15px; display: inline-block; vertical-align: middle; border: 1px solid #999; }
+    </style>
 </head>
 <body>
+    <h2>Simulação: Iluminação Inteligente</h2>
+    <canvas id="mapaCanvas" width="1050" height="900"></canvas>
 
-    <div id="legenda">
-        <h3>Mapa do Pavilhão 8x3</h3>
-        <ul>
-            <li><span class="cor-amostra" style="background-color: #87CEFA; border: 1px solid #6bb9e8;"></span> Zona de Estocagem (Prateleira)</li>
-            <li><span class="cor-amostra" style="background-color: #ffffff; border: 1px solid #ddd;"></span> Área de Circulação (Corredor)</li>
-            <li><span class="cor-amostra" style="background-color: rgba(200, 200, 200, 0.5);"></span> Ponto de Luz (Apagado)</li>
-        </ul>
-        <small><i>Mova o mouse sobre o mapa para simular o operador (Próxima Fase)</i></small>
+    <div id="info-container">
+        <div id="debug">Aguardando interação...</div>
+        <hr>
+        <div class="legenda">
+            <div class="legenda-item"><span class="box" style="background: #32CD32;"></span> Operador Virtual</div>
+            <div class="legenda-item"><span class="box" style="background: #FF4500;"></span> Sensor Ativado</div>
+            <div class="legenda-item"><span class="box" style="background: #FFD700;"></span> Lâmpada (Iluminação)</div>
+            <div class="legenda-item"><span class="box" style="background: #87CEFA;"></span> Prateleira</div>
+        </div>
+        <p><small>Clique em qualquer corredor para mover o operador.</small></p>
     </div>
 
-    <canvas id="mapaCanvas" width="1100" height="1100"></canvas>
-
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
