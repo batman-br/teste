@@ -1,3 +1,4 @@
+/* config.js */
 const CONFIG = {
     LAMPADAS_VERTICAL: 7,    
     LAMPADAS_HORIZONTAL: 3,  
@@ -5,12 +6,14 @@ const CONFIG = {
     NUM_EIXOS_V: 10,          
     NUM_EIXOS_H: 4,         
     MARGEM: 60,
-    VELOCIDADE_OPERADOR: 2,  
-    RAIO_DETECCAO: 40, 
-    TEMPO_LIGADA_MS: 8000,   // 8 segundos
-    DISTANCIA_PREDITIVA: 5   // Quantas lâmpadas à frente
+
+    VELOCIDADE_OPERADOR: 2.5,  
+    RAIO_DETECCAO: 45, 
+    TEMPO_REATIVO_MS: 8000,   // Tempo fixo sem rastro
+    DISTANCIA_PREDITIVA: 5    // Quantas lâmpadas de projeção
 };
 
+// Cálculos de geometria das prateleiras
 CONFIG.CORREDOR_W = CONFIG.ESPACO_LAMPADA; 
 CONFIG.CORREDOR_H = CONFIG.ESPACO_LAMPADA;
 CONFIG.LARGURA_PRATELEIRA = CONFIG.ESPACO_LAMPADA * (CONFIG.LAMPADAS_HORIZONTAL + 1) - CONFIG.CORREDOR_W;
