@@ -1,27 +1,27 @@
-/* config.js - Arquitetura de Grade Equidistante */
+/* config.js - Configuração Proporcional */
 const CONFIG = {
-    // Parâmetros de Densidade (Suas novas definições)
-    LAMPADAS_VERTICAL: 8,    // 8 lâmpadas ao longo da prateleira
-    LAMPADAS_HORIZONTAL: 3,  // 3 lâmpadas na largura do corredor
+    // Agora com 7 lâmpadas no longo e 3 no largo
+    LAMPADAS_VERTICAL: 7,    
+    LAMPADAS_HORIZONTAL: 3,  
     
-    // O "Módulo" (Distância exata entre cada lâmpada em pixels)
+    // Mantendo o passo de 40px para um visual limpo
     ESPACO_LAMPADA: 40,      
 
-    // Malha do Armazém
-    NUM_EIXOS_V: 8,          // Quantidade de colunas de corredores
-    NUM_EIXOS_H: 12,         // Quantidade de linhas de corredores
+    // 8 eixos verticais = 7 colunas de prateleiras
+    // 12 eixos horizontais = 11 linhas de prateleiras
+    NUM_EIXOS_V: 8,          
+    NUM_EIXOS_H: 12,         
     MARGEM: 60,
 
-    // Física e Movimento
     VELOCIDADE_OPERADOR: 2,  
     RAIO_DETECCAO: 30,
 
-    // Iluminação (Preparações para o próximo passo)
-    TEMPO_PARA_PARAR: 5000,
+    // Parâmetros para o próximo passo (Iluminação)
+    LIGADAS_AFRENTE: 4,
     TAXA_FADE: 0.015
 };
 
-// Cálculos derivados para manter a proporção automática
+// Cálculos automáticos de tamanho
 CONFIG.CORREDOR_W = CONFIG.ESPACO_LAMPADA; 
 CONFIG.CORREDOR_H = CONFIG.ESPACO_LAMPADA;
 CONFIG.LARGURA_PRATELEIRA = CONFIG.ESPACO_LAMPADA * (CONFIG.LAMPADAS_HORIZONTAL + 1) - CONFIG.CORREDOR_W;
