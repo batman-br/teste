@@ -1,33 +1,11 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Matriz de Iluminação Preditiva</title>
-    <style>
-        body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
-        canvas { background: #fff; border: 1px solid #ccc; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: crosshair; }
-        #info-container { width: 1000px; margin-top: 20px; padding: 15px; background: #fff; border-radius: 8px; }
-        .legenda-item { display: inline-block; margin-right: 20px; }
-        .box { width: 15px; height: 15px; display: inline-block; vertical-align: middle; border: 1px solid #999; }
-    </style>
-</head>
-<body>
-    <h2>Simulação: Iluminação Inteligente</h2>
-    <canvas id="mapaCanvas" width="1400" height="1200"></canvas>
-
-    <div id="info-container">
-        <div id="debug">Aguardando interação...</div>
-        <hr>
-        <div class="legenda">
-            <div class="legenda-item"><span class="box" style="background: #32CD32;"></span> Operador Virtual</div>
-            <div class="legenda-item"><span class="box" style="background: #FF4500;"></span> Sensor Ativado</div>
-            <div class="legenda-item"><span class="box" style="background: #FFD700;"></span> Lâmpada (Iluminação)</div>
-            <div class="legenda-item"><span class="box" style="background: #87CEFA;"></span> Prateleira</div>
-        </div>
-        <p><small>Clique em qualquer corredor para mover o operador.</small></p>
+<div id="ui-container" style="font-family: sans-serif; margin-bottom: 10px; display: flex; align-items: center; gap: 20px;">
+    <button id="btnModo" onclick="alternarModo()" style="padding: 10px 20px; cursor: pointer; font-weight: bold; background: #32CD32; border: none; border-radius: 4px;">
+        Modo Atual: REATIVO
+    </button>
+    <div style="display: flex; gap: 15px; font-size: 14px;">
+        <span><b style="color: #32CD32;">■</b> Operador</span>
+        <span><b style="color: #FFD700;">●</b> Luz Ativa</span>
+        <span><b style="color: #FF4500;">¤</b> Detecção Ativa</span>
     </div>
-
-    <script src="config.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+</div>
+<canvas id="mapaCanvas" width="1400" height="1200" style="background: #1a1a1a; cursor: crosshair;"></canvas>
