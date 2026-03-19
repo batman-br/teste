@@ -1,8 +1,8 @@
-/* script.js - Sistema Completo Reativo/Preditivo */
+/* script.js */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
-
 let modoPreditivo = false; 
+
 let lampadas = [];
 let prateleiras = [];
 let eixosX = []; 
@@ -12,19 +12,15 @@ let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], isMoving: false }
 function inicializar() {
     lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
 
-    // 1. Geração da Malha de Sensores
+    // 1. Sensores
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
         eixosY.push(y);
-
         for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
             let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
             if (r === 0) eixosX.push(x);
-
             const criarL = (lx, ly) => ({ x: lx, y: ly, brilho: 0, ultimoTrigger: 0, detectando: false });
-
-            lampadas.push(criarL(x, y)); // Nó principal
-
+            lampadas.push(criarL(x, y));
             if (c < CONFIG.NUM_EIXOS_V - 1) {
                 for (let i = 1; i <= CONFIG.LAMPADAS_HORIZONTAL; i++) 
                     lampadas.push(criarL(x + (i * CONFIG.ESPACO_LAMPADA), y));
@@ -36,7 +32,7 @@ function inicializar() {
         }
     }
 
-    // 2. Geração das Prateleiras
+    // 2. Prateleiras
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
@@ -73,28 +69,34 @@ function atualizarIluminacao() {
         let dOp = Math.sqrt((l.x - operador.x)**2 + (l.y - operador.y)**2);
         let dFoco = Math.sqrt((l.x - focoX)**2 + (l.y - focoY)**2);
 
-        // Detecção física (Sinal laranja)
         l.detectando = (operador.isMoving && dOp < CONFIG.RAIO_DETECCAO);
 
-        // Lógica de acendimento
-        if (l.detectando || (modoPreditivo && operador.isMoving && dFoco < CONFIG.RAIO_DETECCAO * 1.2)) {
-            l.brilho = 1;
-            l.ultimoTrigger = agora;
-        } else if (agora - l.ultimoTrigger > CONFIG.TEMPO_LIGADA_MS) {
-            l.brilho = Math.max(0, l.brilho - CONFIG.TAXA_FADE);
+        if (modoPreditivo) {
+            // No modo Preditivo: Acende apenas se estiver no foco ou for detectado
+            if (l.detectando || (operador.isMoving && dFoco < CONFIG.RAIO_DETECCAO * 1.5)) {
+                l.brilho = 1;
+            } else {
+                l.brilho = 0; // Apaga instantaneamente quando não é mais alvo
+            }
+        } else {
+            // No modo Reativo: Acende se for detectado e obedece o tempo
+            if (l.detectando) {
+                l.brilho = 1;
+                l.ultimoTrigger = agora;
+            } else if (agora - l.ultimoTrigger > CONFIG.TEMPO_LIGADA_MS) {
+                l.brilho = 0; // Apagamento Binário (sem fade)
+            }
         }
     });
 }
 
+// Funções de Movimento e Desenho (Mesmo anterior, apenas integrando as novas regras de brilho)
 function atualizarMovimento() {
-    if (operador.rota.length === 0) {
-        operador.isMoving = false; return;
-    }
+    if (operador.rota.length === 0) { operador.isMoving = false; return; }
     operador.isMoving = true;
     let alvo = operador.rota[0];
     let dx = alvo.x - operador.x, dy = alvo.y - operador.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
-
     if (dist <= CONFIG.VELOCIDADE_OPERADOR) {
         operador.x = alvo.x; operador.y = alvo.y;
         operador.rota.shift();
@@ -106,34 +108,21 @@ function atualizarMovimento() {
 
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Prateleiras
     ctx.fillStyle = "#2c3e50";
     prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
-
-    // Operador
     ctx.fillStyle = "#32CD32";
     ctx.fillRect(operador.x - 10, operador.y - 10, 20, 20);
-    ctx.strokeStyle = "#fff"; ctx.strokeRect(operador.x - 10, operador.y - 10, 20, 20);
-
-    // Lâmpadas
     lampadas.forEach(l => {
-        // Ponto do sensor (sempre visível mas discreto)
         ctx.beginPath(); ctx.arc(l.x, l.y, 2, 0, 7);
-        ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fill();
-
-        if (l.brilho > 0) {
-            // Luz amarela
+        ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fill();
+        if (l.brilho === 1) { // Só desenha o brilho se estiver no estado 1
             ctx.beginPath(); ctx.arc(l.x, l.y, 18, 0, 7);
-            ctx.fillStyle = `rgba(255, 255, 0, ${l.brilho * 0.25})`; ctx.fill();
-            
+            ctx.fillStyle = "rgba(255, 255, 0, 0.25)"; ctx.fill();
             ctx.beginPath(); ctx.arc(l.x, l.y, 4, 0, 7);
-            ctx.fillStyle = `rgba(255, 215, 0, ${l.brilho})`; ctx.fill();
+            ctx.fillStyle = "rgba(255, 215, 0, 1)"; ctx.fill();
         }
-
         if (l.detectando) {
-            // Círculo de detecção ativa (Laranja)
-            ctx.beginPath(); ctx.arc(l.x, l.y, 6, 0, 7);
+            ctx.beginPath(); ctx.arc(l.x, l.y, 7, 0, 7);
             ctx.strokeStyle = "#FF4500"; ctx.lineWidth = 2; ctx.stroke();
         }
     });
@@ -175,4 +164,5 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-inicializar();
+// Inicia após garantir que o DOM e os scripts carregaram
+window.onload = inicializar;
