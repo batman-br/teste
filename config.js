@@ -3,12 +3,12 @@ const CONFIG = {
     LAMPADAS_VERTICAL: 7,    
     LAMPADAS_HORIZONTAL: 3,  
     
-    ESPACO_LAMPADA: 40,      
+    ESPACO_LAMPADA: 36,      
 
     // 12 eixos verticais (muitas colunas)
     // 3 eixos horizontais (poucas linhas)
-    NUM_EIXOS_V: 12,          
-    NUM_EIXOS_H: 3,         
+    NUM_EIXOS_V: 10,          
+    NUM_EIXOS_H: 4,         
     MARGEM: 60,
 
     VELOCIDADE_OPERADOR: 2,  
