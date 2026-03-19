@@ -6,11 +6,9 @@ const CONFIG = {
     NUM_EIXOS_H: 4,         
     MARGEM: 60,
     VELOCIDADE_OPERADOR: 2,  
-    RAIO_DETECCAO: 45, 
-
-    TEMPO_LIGADA_MS: 8000,   
-    TAXA_FADE: 0.02,         
-    LIGADAS_AFRENTE: 5       
+    RAIO_DETECCAO: 25, 
+    TEMPO_LIGADA_MS: 8000,   // Tempo fixo para o modo reativo
+    LIGADAS_AFRENTE: 6       // Projeção longa no modo preditivo
 };
 
 CONFIG.CORREDOR_W = CONFIG.ESPACO_LAMPADA; 
