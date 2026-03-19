@@ -8,7 +8,7 @@ const CONFIG = {
     MARGEM: 60,
 
     VELOCIDADE_OPERADOR: 2.5,  
-    RAIO_DETECCAO: 45, 
+    RAIO_DETECCAO: 10, 
     TEMPO_REATIVO_MS: 8000,   // Tempo fixo sem rastro
     DISTANCIA_PREDITIVA: 5    // Quantas lâmpadas de projeção
 };
