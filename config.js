@@ -1,4 +1,3 @@
-/* config.js */
 const CONFIG = {
     LAMPADAS_VERTICAL: 7,    
     LAMPADAS_HORIZONTAL: 3,  
@@ -6,15 +5,12 @@ const CONFIG = {
     NUM_EIXOS_V: 10,          
     NUM_EIXOS_H: 4,         
     MARGEM: 60,
-
     VELOCIDADE_OPERADOR: 2,  
-    RAIO_DETECCAO: 40, 
+    RAIO_DETECCAO: 45, 
 
-    // Novos Parâmetros
-    MODO_INICIAL: 'REATIVO', // 'REATIVO' ou 'PREDITIVO'
-    TEMPO_LIGADA_MS: 8000,   // 8 segundos ligada após detecção
-    TAXA_FADE: 0.02,         // Velocidade que apaga após o tempo expirar
-    LIGADAS_AFRENTE: 5       // Quantidade de lâmpadas projetadas no Preditivo
+    TEMPO_LIGADA_MS: 8000,   
+    TAXA_FADE: 0.02,         
+    LIGADAS_AFRENTE: 5       
 };
 
 CONFIG.CORREDOR_W = CONFIG.ESPACO_LAMPADA; 
