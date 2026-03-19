@@ -1,4 +1,4 @@
-/* script.js - Grade de Precisão Logística */
+/* script.js - Warehouse Grid 7x3 */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -12,7 +12,7 @@ let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], emTransito: false
 function inicializar() {
     lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
 
-    // 1. Gerar Grade Baseada no Espaçamento Fixo
+    // 1. Geração da Malha Equidistante
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
         eixosY.push(y);
@@ -21,17 +21,17 @@ function inicializar() {
             let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
             if (r === 0) eixosX.push(x);
 
-            // Nó de Cruzamento
+            // Sensor de Cruzamento
             lampadas.push({ x, y, isNo: true, brilho: 0 });
 
-            // Lâmpadas Horizontais (3 espaços entre colunas)
+            // Sensores Horizontais (Largura do corredor)
             if (c < CONFIG.NUM_EIXOS_V - 1) {
                 for (let i = 1; i <= CONFIG.LAMPADAS_HORIZONTAL; i++) {
                     lampadas.push({ x: x + (i * CONFIG.ESPACO_LAMPADA), y, isNo: false, brilho: 0 });
                 }
             }
 
-            // Lâmpadas Verticais (8 espaços entre linhas)
+            // Sensores Verticais (Comprimento da prateleira - 7 lâmpadas)
             if (r < CONFIG.NUM_EIXOS_H - 1) {
                 for (let j = 1; j <= CONFIG.LAMPADAS_VERTICAL; j++) {
                     lampadas.push({ x, y: y + (j * CONFIG.ESPACO_LAMPADA), isNo: false, brilho: 0 });
@@ -40,7 +40,7 @@ function inicializar() {
         }
     }
 
-    // 2. Gerar Prateleiras (Encaixadas perfeitamente nos vãos)
+    // 2. Posicionamento das Prateleiras
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
@@ -54,7 +54,7 @@ function inicializar() {
     loop();
 }
 
-// -- Mantendo a Navegação de Fluxo (Waypoints) --
+// Interação e Navegação
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     let mx = e.clientX - rect.left;
@@ -108,16 +108,16 @@ function atualizarMovimento() {
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Prateleiras (Abaixo)
+    // Prateleiras
     ctx.fillStyle = "#daeaf5";
     prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
 
-    // Operador (Meio)
+    // Operador
     ctx.fillStyle = "#32CD32";
     ctx.fillRect(operador.x - 10, operador.y - 10, 20, 20);
     ctx.strokeStyle = "#000"; ctx.strokeRect(operador.x - 10, operador.y - 10, 20, 20);
 
-    // Lâmpadas (Topo)
+    // Sensores (Lâmpadas)
     lampadas.forEach(l => {
         ctx.beginPath(); ctx.arc(l.x, l.y, 3, 0, 7);
         ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; ctx.fill();
