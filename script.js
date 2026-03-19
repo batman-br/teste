@@ -1,28 +1,38 @@
-/* script.js */
+/* script.js - V4 */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
-let modoPreditivo = false; 
 
+let modoPreditivo = false; 
 let lampadas = [];
 let prateleiras = [];
 let eixosX = []; 
 let eixosY = []; 
-let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], isMoving: false };
+
+let operador = { 
+    x: CONFIG.MARGEM, 
+    y: CONFIG.MARGEM, 
+    rota: [], 
+    isMoving: false,
+    tempoUltimoMovimento: Date.now()
+};
+
+// Memória Preditiva
+let ultimoSensor = null;
+let vetorAtual = { x: 0, y: 0 };
 
 function inicializar() {
     lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
-    gerarMalha();
-    requestAnimationFrame(loop);
-}
 
-function gerarMalha() {
+    // Gerar Malha
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
         eixosY.push(y);
         for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
             let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
             if (r === 0) eixosX.push(x);
-            const addL = (lx, ly) => ({ x: lx, y: ly, acesa: false, ultimoTrigger: 0, detectando: false });
+
+            // brilho (0 a 1) para fade, estadoReativo para binário
+            const addL = (lx, ly) => ({ x: lx, y: ly, brilho: 0, estadoReativo: false, alvoPreditivo: false, ultimoTrigger: 0, detectando: false });
             
             lampadas.push(addL(x, y)); 
             if (c < CONFIG.NUM_EIXOS_V - 1) {
@@ -35,6 +45,8 @@ function gerarMalha() {
             }
         }
     }
+
+    // Gerar Prateleiras
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
@@ -44,69 +56,141 @@ function gerarMalha() {
             });
         }
     }
-}
-
-function atualizarIluminacao() {
-    const agora = Date.now();
-    
-    // Identificar direção do movimento
-    let dx = 0, dy = 0;
-    if (operador.isMoving && operador.rota.length > 0) {
-        dx = operador.rota[0].x - operador.x;
-        dy = operador.rota[0].y - operador.y;
-    }
-
-    lampadas.forEach(l => {
-        let dOp = Math.sqrt((l.x - operador.x)**2 + (l.y - operador.y)**2);
-        l.detectando = (operador.isMoving && dOp < CONFIG.RAIO_DETECCAO);
-
-        if (modoPreditivo) {
-            if (l.detectando) {
-                l.acesa = true;
-            } else if (operador.isMoving) {
-                // Lógica de Vetor: Lâmpada está na frente do operador?
-                let relX = l.x - operador.x;
-                let relY = l.y - operador.y;
-                
-                // Produto escalar para saber se a lâmpada está na direção do movimento
-                let dot = (relX * dx + relY * dy);
-                let distSq = relX * relX + relY * relY;
-                
-                // Acende se estiver alinhada ao eixo de movimento e dentro do alcance à frente
-                let alinhada = (Math.abs(relX) < 5 || Math.abs(relY) < 5);
-                let noAlcance = distSq < (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA)**2;
-                
-                l.acesa = (dot > 0 && alinhada && noAlcance);
-            } else {
-                l.acesa = false;
-            }
-        } else {
-            // Reativo (Físico 100%)
-            if (l.detectando) {
-                l.acesa = true;
-                l.ultimoTrigger = agora;
-            } else if (agora - l.ultimoTrigger > CONFIG.TEMPO_REATIVO_MS) {
-                l.acesa = false;
-            }
-        }
-    });
+    requestAnimationFrame(loop);
 }
 
 function alternarModo() {
     modoPreditivo = !modoPreditivo;
     const btn = document.getElementById('btnModo');
-    btn.innerText = `MODO: ${modoPreditivo ? 'PREDITIVO' : 'REATIVO (8s)'}`;
+    btn.innerText = `MODO: ${modoPreditivo ? 'PREDITIVO' : 'REATIVO'}`;
     btn.style.background = modoPreditivo ? '#00BFFF' : '#32CD32';
-    lampadas.forEach(l => { l.acesa = false; l.ultimoTrigger = 0; });
+    
+    // Reset Total
+    lampadas.forEach(l => { 
+        l.brilho = 0; l.estadoReativo = false; l.alvoPreditivo = false; l.ultimoTrigger = 0; 
+    });
+    ultimoSensor = null;
+    vetorAtual = { x: 0, y: 0 };
 }
 
-// Funções de Desenho e Movimento (mantenha as mesmas do arquivo anterior)
+// Busca uma lâmpada específica na malha pela coordenada
+function buscarLampada(x, y) {
+    return lampadas.find(l => Math.abs(l.x - x) < 2 && Math.abs(l.y - y) < 2);
+}
+
+function atualizarIluminacao() {
+    const agora = Date.now();
+    
+    // 1. Identificar o Sensor Atual Físico (Raio 10)
+    let sensorAtivo = null;
+    lampadas.forEach(l => {
+        let dOp = Math.sqrt((l.x - operador.x)**2 + (l.y - operador.y)**2);
+        l.detectando = (dOp < CONFIG.RAIO_DETECCAO);
+        if (l.detectando) sensorAtivo = l;
+    });
+
+    if (modoPreditivo) {
+        // --- MOTOR PREDITIVO (Estado, Vetor e Fade) ---
+        
+        // Atualiza vetor se mudou de sensor
+        if (sensorAtivo && sensorAtivo !== ultimoSensor) {
+            if (ultimoSensor) {
+                // Descobre a direção (Normalizada para -1, 0 ou 1)
+                let dx = Math.sign(sensorAtivo.x - ultimoSensor.x);
+                let dy = Math.sign(sensorAtivo.y - ultimoSensor.y);
+                if (dx !== 0 || dy !== 0) vetorAtual = { x: dx, y: dy };
+            }
+            ultimoSensor = sensorAtivo;
+        }
+
+        // Resetar alvos para recalcular este frame
+        lampadas.forEach(l => l.alvoPreditivo = false);
+
+        if (ultimoSensor) {
+            ultimoSensor.alvoPreditivo = true; // Sempre acende onde o operador está
+
+            let tempoParado = agora - operador.tempoUltimoMovimento;
+            let isParado = (!operador.isMoving && tempoParado > CONFIG.Y_TIMEOUT_PARADA);
+
+            if (isParado) {
+                // ESTADO: PARADA (Bolha Z)
+                // Acende Z para frente e Z para trás no eixo atual
+                for (let i = 1; i <= CONFIG.Z_BOLHA_LADOS; i++) {
+                    let lFrente = buscarLampada(ultimoSensor.x + (vetorAtual.x * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y + (vetorAtual.y * i * CONFIG.ESPACO_LAMPADA));
+                    let lTras = buscarLampada(ultimoSensor.x - (vetorAtual.x * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y - (vetorAtual.y * i * CONFIG.ESPACO_LAMPADA));
+                    if (lFrente) lFrente.alvoPreditivo = true;
+                    if (lTras) lTras.alvoPreditivo = true;
+                }
+            } else {
+                // ESTADO: MOVIMENTO (Projeção X e Rastro)
+                // Rastro (Distância Fade)
+                for (let i = 1; i <= CONFIG.DISTANCIA_FADE; i++) {
+                    let lTras = buscarLampada(ultimoSensor.x - (vetorAtual.x * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y - (vetorAtual.y * i * CONFIG.ESPACO_LAMPADA));
+                    if (lTras) lTras.alvoPreditivo = true;
+                }
+                
+                // Projeção Preditiva (X)
+                if (vetorAtual.x !== 0 || vetorAtual.y !== 0) {
+                    for (let i = 1; i <= CONFIG.X_PREDITIVO; i++) {
+                        let lFrente = buscarLampada(ultimoSensor.x + (vetorAtual.x * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y + (vetorAtual.y * i * CONFIG.ESPACO_LAMPADA));
+                        if (lFrente) lFrente.alvoPreditivo = true;
+                        else break; // Bateu na parede
+                    }
+                }
+
+                // ESTADO: ESQUINA (Nó Transversal W)
+                let isNodeX = eixosX.some(ex => Math.abs(ex - ultimoSensor.x) < 2);
+                let isNodeY = eixosY.some(ey => Math.abs(ey - ultimoSensor.y) < 2);
+                
+                if (isNodeX && isNodeY) {
+                    // Descobre o eixo transversal
+                    let transX = Math.abs(vetorAtual.y); 
+                    let transY = Math.abs(vetorAtual.x);
+                    
+                    for (let i = 1; i <= CONFIG.W_ESQUINA_LADOS; i++) {
+                        let lEsq1 = buscarLampada(ultimoSensor.x + (transX * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y + (transY * i * CONFIG.ESPACO_LAMPADA));
+                        let lEsq2 = buscarLampada(ultimoSensor.x - (transX * i * CONFIG.ESPACO_LAMPADA), ultimoSensor.y - (transY * i * CONFIG.ESPACO_LAMPADA));
+                        if (lEsq1) lEsq1.alvoPreditivo = true;
+                        if (lEsq2) lEsq2.alvoPreditivo = true;
+                    }
+                }
+            }
+        }
+
+        // Aplica o Fade Suave (Transição Analógica)
+        lampadas.forEach(l => {
+            if (l.alvoPreditivo) l.brilho = Math.min(1, l.brilho + CONFIG.FADE_SPEED);
+            else l.brilho = Math.max(0, l.brilho - CONFIG.FADE_SPEED);
+        });
+
+    } else {
+        // --- MOTOR REATIVO (Isolado e Intacto) ---
+        lampadas.forEach(l => {
+            if (l.detectando) {
+                l.estadoReativo = true;
+                l.ultimoTrigger = agora;
+            } else if (agora - l.ultimoTrigger > CONFIG.TEMPO_REATIVO_MS) {
+                l.estadoReativo = false; // Binário, sem fade
+            }
+            // Força o brilho a ser 1 ou 0 para desenhar corretamente
+            l.brilho = l.estadoReativo ? 1 : 0; 
+        });
+    }
+}
+
 function atualizarMovimento() {
-    if (operador.rota.length === 0) { operador.isMoving = false; return; }
+    if (operador.rota.length === 0) { 
+        operador.isMoving = false; 
+        return; 
+    }
+    
     operador.isMoving = true;
+    operador.tempoUltimoMovimento = Date.now(); // Reseta o timer da parada enquanto move
+    
     let alvo = operador.rota[0];
     let dx = alvo.x - operador.x, dy = alvo.y - operador.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
+
     if (dist <= CONFIG.VELOCIDADE_OPERADOR) {
         operador.x = alvo.x; operador.y = alvo.y;
         operador.rota.shift();
@@ -118,19 +202,28 @@ function atualizarMovimento() {
 
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     ctx.fillStyle = "#1e272e";
     prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
     ctx.fillStyle = "#32CD32";
-    ctx.fillRect(operador.x - 8, operador.y - 8, 16, 16); // Operador um pouco menor para o raio 10
+    ctx.fillRect(operador.x - 8, operador.y - 8, 16, 16);
+
     lampadas.forEach(l => {
+        // Base invisível do sensor
         ctx.beginPath(); ctx.arc(l.x, l.y, 1.5, 0, 7);
-        ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fill();
-        if (l.acesa) {
+        ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fill();
+
+        // Só desenha a luz se o brilho for maior que 0 (Economiza processamento)
+        if (l.brilho > 0.01) {
             ctx.beginPath(); ctx.arc(l.x, l.y, 15, 0, 7);
-            ctx.fillStyle = "rgba(255, 255, 0, 0.2)"; ctx.fill();
+            ctx.fillStyle = `rgba(255, 255, 0, ${l.brilho * 0.25})`; ctx.fill();
+            
             ctx.beginPath(); ctx.arc(l.x, l.y, 3, 0, 7);
-            ctx.fillStyle = "#FFD700"; ctx.fill();
+            ctx.fillStyle = `rgba(255, 215, 0, ${l.brilho})`; ctx.fill();
         }
+
+        // Sensor laranja (Feedback físico)
         if (l.detectando) {
             ctx.beginPath(); ctx.arc(l.x, l.y, 5, 0, 7);
             ctx.strokeStyle = "#FF4500"; ctx.lineWidth = 1.5; ctx.stroke();
@@ -138,6 +231,7 @@ function desenhar() {
     });
 }
 
+// Interação e Navegação
 canvas.addEventListener('mousedown', (e) => {
     const r = canvas.getBoundingClientRect();
     let mx = e.clientX - r.left, my = e.clientY - r.top;
