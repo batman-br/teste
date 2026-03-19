@@ -1,8 +1,8 @@
 /* script.js */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
-
 let modoPreditivo = false; 
+
 let lampadas = [];
 let prateleiras = [];
 let eixosX = []; 
@@ -11,15 +11,17 @@ let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], isMoving: false }
 
 function inicializar() {
     lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
+    gerarMalha();
+    requestAnimationFrame(loop);
+}
 
-    // 1. Criar Malha de Sensores
+function gerarMalha() {
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
         eixosY.push(y);
         for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
             let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
             if (r === 0) eixosX.push(x);
-
             const addL = (lx, ly) => ({ x: lx, y: ly, acesa: false, ultimoTrigger: 0, detectando: false });
             
             lampadas.push(addL(x, y)); 
@@ -33,8 +35,6 @@ function inicializar() {
             }
         }
     }
-
-    // 2. Criar Prateleiras
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
@@ -44,29 +44,16 @@ function inicializar() {
             });
         }
     }
-    requestAnimationFrame(loop);
-}
-
-function alternarModo() {
-    modoPreditivo = !modoPreditivo;
-    const btn = document.getElementById('btnModo');
-    btn.innerText = `MODO: ${modoPreditivo ? 'PREDITIVO' : 'REATIVO (8s)'}`;
-    btn.style.background = modoPreditivo ? '#00BFFF' : '#32CD32';
-    // Reset imediato de todas as luzes ao trocar
-    lampadas.forEach(l => { l.acesa = false; l.ultimoTrigger = 0; });
 }
 
 function atualizarIluminacao() {
     const agora = Date.now();
-    let focoX = operador.x, focoY = operador.y;
-
-    // Cálculo do ponto preditivo (apenas se estiver movendo)
-    if (modoPreditivo && operador.isMoving && operador.rota.length > 0) {
-        let alvo = operador.rota[0];
-        let dx = alvo.x - operador.x, dy = alvo.y - operador.y;
-        let d = Math.sqrt(dx*dx + dy*dy) || 1;
-        focoX = operador.x + (dx / d) * (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA);
-        focoY = operador.y + (dy / d) * (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA);
+    
+    // Identificar direção do movimento
+    let dx = 0, dy = 0;
+    if (operador.isMoving && operador.rota.length > 0) {
+        dx = operador.rota[0].x - operador.x;
+        dy = operador.rota[0].y - operador.y;
     }
 
     lampadas.forEach(l => {
@@ -74,12 +61,27 @@ function atualizarIluminacao() {
         l.detectando = (operador.isMoving && dOp < CONFIG.RAIO_DETECCAO);
 
         if (modoPreditivo) {
-            // Lógica Preditiva: Sem memória de tempo. 
-            // Acende se o operador estiver em cima OU se for o foco do caminho.
-            let dFoco = Math.sqrt((l.x - focoX)**2 + (l.y - focoY)**2);
-            l.acesa = (l.detectando || (operador.isMoving && dFoco < CONFIG.RAIO_DETECCAO * 1.2));
+            if (l.detectando) {
+                l.acesa = true;
+            } else if (operador.isMoving) {
+                // Lógica de Vetor: Lâmpada está na frente do operador?
+                let relX = l.x - operador.x;
+                let relY = l.y - operador.y;
+                
+                // Produto escalar para saber se a lâmpada está na direção do movimento
+                let dot = (relX * dx + relY * dy);
+                let distSq = relX * relX + relY * relY;
+                
+                // Acende se estiver alinhada ao eixo de movimento e dentro do alcance à frente
+                let alinhada = (Math.abs(relX) < 5 || Math.abs(relY) < 5);
+                let noAlcance = distSq < (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA)**2;
+                
+                l.acesa = (dot > 0 && alinhada && noAlcance);
+            } else {
+                l.acesa = false;
+            }
         } else {
-            // Lógica Reativa: Com memória de 8s, mas apagamento binário.
+            // Reativo (Físico 100%)
             if (l.detectando) {
                 l.acesa = true;
                 l.ultimoTrigger = agora;
@@ -90,13 +92,21 @@ function atualizarIluminacao() {
     });
 }
 
+function alternarModo() {
+    modoPreditivo = !modoPreditivo;
+    const btn = document.getElementById('btnModo');
+    btn.innerText = `MODO: ${modoPreditivo ? 'PREDITIVO' : 'REATIVO (8s)'}`;
+    btn.style.background = modoPreditivo ? '#00BFFF' : '#32CD32';
+    lampadas.forEach(l => { l.acesa = false; l.ultimoTrigger = 0; });
+}
+
+// Funções de Desenho e Movimento (mantenha as mesmas do arquivo anterior)
 function atualizarMovimento() {
     if (operador.rota.length === 0) { operador.isMoving = false; return; }
     operador.isMoving = true;
     let alvo = operador.rota[0];
     let dx = alvo.x - operador.x, dy = alvo.y - operador.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
-
     if (dist <= CONFIG.VELOCIDADE_OPERADOR) {
         operador.x = alvo.x; operador.y = alvo.y;
         operador.rota.shift();
@@ -108,34 +118,22 @@ function atualizarMovimento() {
 
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 1. Prateleiras
     ctx.fillStyle = "#1e272e";
     prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
-
-    // 2. Operador
     ctx.fillStyle = "#32CD32";
-    ctx.fillRect(operador.x - 10, operador.y - 10, 20, 20);
-
-    // 3. Lâmpadas
+    ctx.fillRect(operador.x - 8, operador.y - 8, 16, 16); // Operador um pouco menor para o raio 10
     lampadas.forEach(l => {
-        // Sensor base (sempre visível mas discreto)
-        ctx.beginPath(); ctx.arc(l.x, l.y, 2, 0, 7);
-        ctx.fillStyle = "rgba(255,255,255,0.1)"; ctx.fill();
-
+        ctx.beginPath(); ctx.arc(l.x, l.y, 1.5, 0, 7);
+        ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fill();
         if (l.acesa) {
-            // Brilho Amarelo (Glow)
-            ctx.beginPath(); ctx.arc(l.x, l.y, 18, 0, 7);
+            ctx.beginPath(); ctx.arc(l.x, l.y, 15, 0, 7);
             ctx.fillStyle = "rgba(255, 255, 0, 0.2)"; ctx.fill();
-            // Lâmpada central
-            ctx.beginPath(); ctx.arc(l.x, l.y, 4, 0, 7);
+            ctx.beginPath(); ctx.arc(l.x, l.y, 3, 0, 7);
             ctx.fillStyle = "#FFD700"; ctx.fill();
         }
-
         if (l.detectando) {
-            // Anel de detecção (Laranja)
-            ctx.beginPath(); ctx.arc(l.x, l.y, 7, 0, 7);
-            ctx.strokeStyle = "#FF4500"; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.arc(l.x, l.y, 5, 0, 7);
+            ctx.strokeStyle = "#FF4500"; ctx.lineWidth = 1.5; ctx.stroke();
         }
     });
 }
