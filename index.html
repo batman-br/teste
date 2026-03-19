@@ -2,26 +2,31 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Predictive Lighting Matrix</title>
+    <title>Predictive Lighting Matrix - V3</title>
     <style>
-        body { background: #121212; color: white; font-family: sans-serif; margin: 20px; }
-        #ui-container { display: flex; align-items: center; gap: 20px; margin-bottom: 15px; }
-        button { padding: 10px 20px; cursor: pointer; font-weight: bold; border: none; border-radius: 4px; }
-        canvas { background: #1a1a1a; border: 1px solid #333; cursor: crosshair; display: block; }
+        body { background: #121212; color: white; font-family: sans-serif; margin: 20px; overflow: hidden; }
+        #ui-container { display: flex; align-items: center; gap: 25px; margin-bottom: 20px; }
+        button { padding: 12px 24px; cursor: pointer; font-weight: bold; border: none; border-radius: 6px; font-size: 14px; transition: 0.2s; }
+        .legenda { display: flex; gap: 20px; font-size: 13px; color: #888; }
+        canvas { background: #0a0a0a; border: 1px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5); cursor: crosshair; }
     </style>
     <script src="config.js" defer></script>
     <script src="script.js" defer></script>
 </head>
 <body>
-    <div id="ui-container">
-        <button id="btnModo" onclick="alternarModo()" style="background: #32CD32; color: black;">
-            Modo Atual: REATIVO
-        </button>
-        <div style="font-size: 14px; color: #ccc;">
-            <span><b style="color: #FF4500;">○</b> Sensor Ativo</span> | 
-            <span><b style="color: #FFD700;">●</b> Lâmpada Acesa</span>
-        </div>
+
+<div id="ui-container">
+    <button id="btnModo" onclick="alternarModo()" style="background: #32CD32; color: black;">
+        MODO: REATIVO (8s)
+    </button>
+    <div class="legenda">
+        <span><b style="color: #32CD32;">■</b> OPERADOR</span>
+        <span><b style="color: #FFD700;">●</b> LUZ ACESA</span>
+        <span><b style="color: #FF4500;">○</b> SENSOR ATIVO</span>
     </div>
-    <canvas id="mapaCanvas" width="1400" height="1000"></canvas>
+</div>
+
+<canvas id="mapaCanvas" width="1300" height="1050"></canvas>
+
 </body>
 </html>
