@@ -1,6 +1,6 @@
-/* config.js - Parâmetros da Lógica Preditiva */
+/* config.js */
 const CONFIG = {
-    // Geometria do Pavilhão
+    // Geometria
     NUM_EIXOS_V: 8,
     NUM_EIXOS_H: 4,
     LARGURA_PRATELEIRA: 60,
@@ -9,11 +9,11 @@ const CONFIG = {
     CORREDOR_H: 60,
     MARGEM: 80,
 
-    // Regras de Iluminação
-    LIGADAS_AFRENTE: 4,      // Quantas lâmpadas acendem no vetor de movimento
-    ADJACENTES_PARADO: 1,    // Lâmpadas de cada lado quando parado (total 3)
-    DISTANCIA_ESQUINA: 100,  // Distância para ativar o corredor transversal
-    VELOCIDADE_OPERADOR: 3,  // Velocidade do quadrado (px/frame)
-    TAXA_FADE: 0.02,         // Velocidade do fade out (0 a 1)
-    RAIO_DETECCAO: 30        // Sensibilidade do sensor físico
+    // Lógica Preditiva
+    LIGADAS_AFRENTE: 4,      
+    TEMPO_PARA_PARAR: 5000,  // 5 segundos até assumir que parou totalmente
+    DISTANCIA_ESQUINA: 100,  
+    VELOCIDADE_OPERADOR: 4,  
+    TAXA_FADE: 0.015,        
+    RAIO_DETECCAO: 30        
 };
