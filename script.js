@@ -1,4 +1,4 @@
-/* script.js - Matriz Expandida e Dinâmica */
+/* script.js - Grade de Precisão Logística */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -12,52 +12,49 @@ let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], emTransito: false
 function inicializar() {
     lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
 
-    // 1. Geração Dinâmica da Malha
+    // 1. Gerar Grade Baseada no Espaçamento Fixo
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
-        if (!eixosY.includes(y)) eixosY.push(y);
+        eixosY.push(y);
 
         for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
-            let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_V);
-            if (!eixosX.includes(x)) eixosX.push(x);
+            let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
+            if (r === 0) eixosX.push(x);
 
-            // Lâmpada de Cruzamento (Nó)
+            // Nó de Cruzamento
             lampadas.push({ x, y, isNo: true, brilho: 0 });
 
-            // Lâmpadas no trecho Horizontal (ao longo do corredor)
+            // Lâmpadas Horizontais (3 espaços entre colunas)
             if (c < CONFIG.NUM_EIXOS_V - 1) {
-                let larguraTrecho = CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_V;
-                let passoH = larguraTrecho / (CONFIG.LAMPADAS_POR_TRECHO_H + 1);
-                for (let i = 1; i <= CONFIG.LAMPADAS_POR_TRECHO_H; i++) {
-                    lampadas.push({ x: x + (i * passoH), y, isNo: false, brilho: 0 });
+                for (let i = 1; i <= CONFIG.LAMPADAS_HORIZONTAL; i++) {
+                    lampadas.push({ x: x + (i * CONFIG.ESPACO_LAMPADA), y, isNo: false, brilho: 0 });
                 }
             }
 
-            // Lâmpadas no trecho Vertical (largura/transversal do corredor)
+            // Lâmpadas Verticais (8 espaços entre linhas)
             if (r < CONFIG.NUM_EIXOS_H - 1) {
-                let alturaTrecho = CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H;
-                let passoV = alturaTrecho / (CONFIG.LAMPADAS_POR_TRECHO_V + 1);
-                for (let j = 1; j <= CONFIG.LAMPADAS_POR_TRECHO_V; j++) {
-                    lampadas.push({ x, y: y + (j * passoV), isNo: false, brilho: 0 });
+                for (let j = 1; j <= CONFIG.LAMPADAS_VERTICAL; j++) {
+                    lampadas.push({ x, y: y + (j * CONFIG.ESPACO_LAMPADA), isNo: false, brilho: 0 });
                 }
             }
         }
     }
 
-    // 2. Prateleiras
+    // 2. Gerar Prateleiras (Encaixadas perfeitamente nos vãos)
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
-                x: CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_V) + (CONFIG.CORREDOR_V / 2),
-                y: CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H) + (CONFIG.CORREDOR_H / 2),
-                w: CONFIG.LARGURA_PRATELEIRA, h: CONFIG.ALTURA_PRATELEIRA
+                x: eixosX[c] + (CONFIG.CORREDOR_W / 2),
+                y: eixosY[r] + (CONFIG.CORREDOR_H / 2),
+                w: CONFIG.LARGURA_PRATELEIRA, 
+                h: CONFIG.ALTURA_PRATELEIRA
             });
         }
     }
     loop();
 }
 
-// -- Lógica de Movimentação por Waypoints (Mantida e Refinada) --
+// -- Mantendo a Navegação de Fluxo (Waypoints) --
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     let mx = e.clientX - rect.left;
@@ -70,9 +67,6 @@ canvas.addEventListener('mousedown', (e) => {
     if (Math.abs(mx - closestX) < Math.abs(my - closestY)) { alvoX = closestX; alvoY = my; } 
     else { alvoY = closestY; alvoX = mx; }
 
-    alvoX = Math.max(eixosX[0], Math.min(eixosX[eixosX.length-1], alvoX));
-    alvoY = Math.max(eixosY[0], Math.min(eixosY[eixosY.length-1], alvoY));
-
     operador.rota = calcularRota(operador.x, operador.y, alvoX, alvoY);
     operador.emTransito = true;
 });
@@ -80,8 +74,6 @@ canvas.addEventListener('mousedown', (e) => {
 function calcularRota(startX, startY, endX, endY) {
     let rota = [];
     let noEixoX = eixosX.some(ex => Math.abs(startX - ex) < 1);
-    let noEixoY = eixosY.some(ey => Math.abs(startY - ey) < 1);
-    
     if (Math.abs(startX - endX) < 1 || Math.abs(startY - endY) < 1) {
         rota.push({ x: endX, y: endY });
     } else {
@@ -115,16 +107,17 @@ function atualizarMovimento() {
 
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // 1. Prateleiras
-    ctx.fillStyle = "#daeaf5"; // Azul mais suave para não poluir
+    
+    // Prateleiras (Abaixo)
+    ctx.fillStyle = "#daeaf5";
     prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
 
-    // 2. Operador (Sempre abaixo dos sensores)
+    // Operador (Meio)
     ctx.fillStyle = "#32CD32";
-    ctx.fillRect(operador.x - 12, operador.y - 12, 24, 24);
-    ctx.strokeStyle = "#000"; ctx.strokeRect(operador.x - 12, operador.y - 12, 24, 24);
+    ctx.fillRect(operador.x - 10, operador.y - 10, 20, 20);
+    ctx.strokeStyle = "#000"; ctx.strokeRect(operador.x - 10, operador.y - 10, 20, 20);
 
-    // 3. Sensores (Lâmpadas)
+    // Lâmpadas (Topo)
     lampadas.forEach(l => {
         ctx.beginPath(); ctx.arc(l.x, l.y, 3, 0, 7);
         ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; ctx.fill();
