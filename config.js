@@ -10,7 +10,7 @@ const CONFIG = {
     MARGEM: 80,
 
     // Física e Movimento
-    VELOCIDADE_OPERADOR: 2.5, // Pixels por frame
+    VELOCIDADE_OPERADOR: 2, // Pixels por frame
     RAIO_DETECCAO: 30,         // Sensibilidade do sensor infravermelho
 
     // Regras de Iluminação (Para os próximos passos)
