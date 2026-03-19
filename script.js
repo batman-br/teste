@@ -1,44 +1,49 @@
-/* script.js - Foco em Movimentação por Corredores e Camadas */
+/* script.js - Navegação por Trilhos e Camadas */
 const canvas = document.getElementById('mapaCanvas');
 const ctx = canvas.getContext('2d');
 
-// 1. Configurações de Movimento (Mais lento e preciso)
-const VELOCIDADE = 2; 
-
 let lampadas = [];
 let prateleiras = [];
+let eixosX = []; 
+let eixosY = []; 
+
 let operador = { 
     x: CONFIG.MARGEM, 
     y: CONFIG.MARGEM, 
     destinoX: CONFIG.MARGEM, 
     destinoY: CONFIG.MARGEM, 
-    emTransito: false,
-    fase: 'parado' // 'horizontal', 'vertical' ou 'parado'
+    emTransito: false
 };
 
 function inicializar() {
     lampadas = [];
     prateleiras = [];
+    eixosX = [];
+    eixosY = [];
 
-    // Gerar Matriz de Lâmpadas (Mesmo cálculo de grade perfeito)
+    // 1. Mapeamento de Corredores e Sensores
     for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
         let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
+        if (!eixosY.includes(y)) eixosY.push(y);
+
         for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
             let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_V);
-            lampadas.push({ x, y, brilho: 0, detectado: false });
+            if (!eixosX.includes(x)) eixosX.push(x);
+
+            lampadas.push({ x, y, isNo: true }); // Nós de Cruzamento
 
             if (c < CONFIG.NUM_EIXOS_V - 1) {
                 let passo = (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_V) / 3;
-                for (let i = 1; i <= 2; i++) lampadas.push({ x: x + (i * passo), y, brilho: 0 });
+                for (let i = 1; i <= 2; i++) lampadas.push({ x: x + (i * passo), y, isNo: false });
             }
             if (r < CONFIG.NUM_EIXOS_H - 1) {
                 let passo = (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H) / 6;
-                for (let j = 1; j <= 5; j++) lampadas.push({ x, y: y + (j * passo), brilho: 0 });
+                for (let j = 1; j <= 5; j++) lampadas.push({ x, y: y + (j * passo), isNo: false });
             }
         }
     }
 
-    // Gerar Prateleiras
+    // 2. Construção Visual das Prateleiras
     for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
         for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
             prateleiras.push({
@@ -51,16 +56,13 @@ function inicializar() {
     loop();
 }
 
-// Lógica de Destino Inteligente (Sempre trava no corredor mais próximo)
+// Interação de clique com "Snap" no corredor
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     let mouseX = e.clientX - rect.left;
     let mouseY = e.clientY - rect.top;
 
-    // Achar o corredor mais próximo (alinhamento automático)
-    let eixosX = [...new Set(lampadas.map(l => l.x))];
-    let eixosY = [...new Set(lampadas.map(l => l.y))];
-
+    // Trava o destino final nos eixos reais de sensores
     operador.destinoX = eixosX.reduce((prev, curr) => Math.abs(curr - mouseX) < Math.abs(prev - mouseX) ? curr : prev);
     operador.destinoY = eixosY.reduce((prev, curr) => Math.abs(curr - mouseY) < Math.abs(prev - mouseY) ? curr : prev);
     
@@ -70,40 +72,47 @@ canvas.addEventListener('mousedown', (e) => {
 function atualizarMovimento() {
     if (!operador.emTransito) return;
 
-    // MOVIMENTO EM "L": Primeiro resolve o X, depois o Y (ou vice-versa)
-    // Isso garante que ele só ande por onde existem lâmpadas (corredores)
-    if (Math.abs(operador.x - operador.destinoX) > 1) {
-        operador.x += (operador.destinoX > operador.x ? 1 : -1) * VELOCIDADE;
-    } else if (Math.abs(operador.y - operador.destinoY) > 1) {
-        operador.y += (operador.destinoY > operador.y ? 1 : -1) * VELOCIDADE;
+    // Verifica se o operador está exatamente sobre um trilho vertical ou horizontal
+    const sobreEixoX = eixosX.some(ex => Math.abs(operador.x - ex) < 1);
+    const sobreEixoY = eixosY.some(ey => Math.abs(operador.y - ey) < 1);
+
+    // Lógica de Navegação Segura:
+    // Se precisar mudar de X, mas não estiver em um corredor horizontal (Eixo Y), 
+    // ele deve primeiro se mover em Y até encontrar um cruzamento.
+    
+    let distDX = Math.abs(operador.x - operador.destinoX);
+    let distDY = Math.abs(operador.y - operador.destinoY);
+
+    if (distDX > 1 && sobreEixoY) {
+        // Movimento Horizontal Seguro
+        operador.x += (operador.destinoX > operador.x ? 1 : -1) * CONFIG.VELOCIDADE_OPERADOR;
+    } else if (distDY > 1 && sobreEixoX) {
+        // Movimento Vertical Seguro
+        operador.y += (operador.destinoY > operador.y ? 1 : -1) * CONFIG.VELOCIDADE_OPERADOR;
     } else {
-        operador.emTransito = false;
+        // Chegou ou está em um estado inválido, para o trânsito
+        if (distDX <= 1 && distDY <= 1) operador.emTransito = false;
     }
 }
 
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. DESENHAR PRATELEIRAS (Fundo)
+    // 1. Camada de Prateleiras (Fundo)
     ctx.fillStyle = "#87CEFA";
-    prateleiras.forEach(p => {
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.strokeStyle = "#5ba8d4";
-        ctx.strokeRect(p.x, p.y, p.w, p.h);
-    });
+    prateleiras.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
 
-    // 2. DESENHAR OPERADOR (Meio - agora fica atrás das lâmpadas)
+    // 2. Camada do Operador (Abaixo dos Sensores)
     ctx.fillStyle = "#32CD32";
     ctx.fillRect(operador.x - 12, operador.y - 12, 24, 24);
     ctx.strokeStyle = "#000";
     ctx.strokeRect(operador.x - 12, operador.y - 12, 24, 24);
 
-    // 3. DESENHAR LÂMPADAS/SENSORES (Topo)
+    // 3. Camada de Sensores (Topo)
     lampadas.forEach(l => {
-        // Sensor Físico
         ctx.beginPath();
         ctx.arc(l.x, l.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
         ctx.fill();
         ctx.closePath();
     });
