@@ -10,38 +10,8 @@ let eixosY = [];
 let operador = { x: CONFIG.MARGEM, y: CONFIG.MARGEM, rota: [], isMoving: false };
 
 function inicializar() {
-    lampadas = []; prateleiras = []; eixosX = []; eixosY = [];
-
-    // 1. Sensores
-    for (let r = 0; r < CONFIG.NUM_EIXOS_H; r++) {
-        let y = CONFIG.MARGEM + r * (CONFIG.ALTURA_PRATELEIRA + CONFIG.CORREDOR_H);
-        eixosY.push(y);
-        for (let c = 0; c < CONFIG.NUM_EIXOS_V; c++) {
-            let x = CONFIG.MARGEM + c * (CONFIG.LARGURA_PRATELEIRA + CONFIG.CORREDOR_W);
-            if (r === 0) eixosX.push(x);
-            const criarL = (lx, ly) => ({ x: lx, y: ly, brilho: 0, ultimoTrigger: 0, detectando: false });
-            lampadas.push(criarL(x, y));
-            if (c < CONFIG.NUM_EIXOS_V - 1) {
-                for (let i = 1; i <= CONFIG.LAMPADAS_HORIZONTAL; i++) 
-                    lampadas.push(criarL(x + (i * CONFIG.ESPACO_LAMPADA), y));
-            }
-            if (r < CONFIG.NUM_EIXOS_H - 1) {
-                for (let j = 1; j <= CONFIG.LAMPADAS_VERTICAL; j++) 
-                    lampadas.push(criarL(x, y + (j * CONFIG.ESPACO_LAMPADA)));
-            }
-        }
-    }
-
-    // 2. Prateleiras
-    for (let r = 0; r < CONFIG.NUM_EIXOS_H - 1; r++) {
-        for (let c = 0; c < CONFIG.NUM_EIXOS_V - 1; c++) {
-            prateleiras.push({
-                x: eixosX[c] + (CONFIG.CORREDOR_W / 2),
-                y: eixosY[r] + (CONFIG.CORREDOR_H / 2),
-                w: CONFIG.LARGURA_PRATELEIRA, h: CONFIG.ALTURA_PRATELEIRA
-            });
-        }
-    }
+    // ... (Mantenha a mesma lógica de geração de lampadas e prateleiras de antes)
+    gerarMalha(); 
     loop();
 }
 
@@ -50,45 +20,50 @@ function alternarModo() {
     const btn = document.getElementById('btnModo');
     btn.innerText = `Modo Atual: ${modoPreditivo ? 'PREDITIVO' : 'REATIVO'}`;
     btn.style.background = modoPreditivo ? '#00BFFF' : '#32CD32';
+    // Limpa todas as lâmpadas ao trocar de modo para evitar lixo visual
+    lampadas.forEach(l => { l.brilho = 0; l.ultimoTrigger = 0; });
 }
 
 function atualizarIluminacao() {
     const agora = Date.now();
+    
+    // 1. Determinar ponto de foco (apenas para o Preditivo)
     let focoX = operador.x, focoY = operador.y;
-
     if (modoPreditivo && operador.isMoving && operador.rota.length > 0) {
         let alvo = operador.rota[0];
         let dx = alvo.x - operador.x, dy = alvo.y - operador.y;
         let dist = Math.sqrt(dx*dx + dy*dy) || 1;
-        let proj = CONFIG.LIGADAS_AFRENTE * CONFIG.ESPACO_LAMPADA;
-        focoX = operador.x + (dx / dist) * proj;
-        focoY = operador.y + (dy / dist) * proj;
+        focoX = operador.x + (dx / dist) * (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA);
+        focoY = operador.y + (dy / dist) * (CONFIG.DISTANCIA_PREDITIVA * CONFIG.ESPACO_LAMPADA);
     }
 
     lampadas.forEach(l => {
         let dOp = Math.sqrt((l.x - operador.x)**2 + (l.y - operador.y)**2);
-        let dFoco = Math.sqrt((l.x - focoX)**2 + (l.y - focoY)**2);
-
         l.detectando = (operador.isMoving && dOp < CONFIG.RAIO_DETECCAO);
 
         if (modoPreditivo) {
-            // No modo Preditivo: Acende apenas se estiver no foco ou for detectado
-            if (l.detectando || (operador.isMoving && dFoco < CONFIG.RAIO_DETECCAO * 1.5)) {
-                l.brilho = 1;
-            } else {
-                l.brilho = 0; // Apaga instantaneamente quando não é mais alvo
-            }
+            // REGRA PREDITIVA: Digital (0 ou 1) e Sem Memória
+            // Acende APENAS se estiver perto do operador OU no caminho à frente
+            let dFoco = Math.sqrt((l.x - focoX)**2 + (l.y - focoY)**2);
+            let noCaminho = (operador.isMoving && dFoco < CONFIG.RAIO_DETECCAO * 1.2);
+            
+            l.brilho = (l.detectando || noCaminho) ? 1 : 0;
         } else {
-            // No modo Reativo: Acende se for detectado e obedece o tempo
+            // REGRA REATIVA: Digital (0 ou 1) COM Memória de 8s
             if (l.detectando) {
                 l.brilho = 1;
                 l.ultimoTrigger = agora;
-            } else if (agora - l.ultimoTrigger > CONFIG.TEMPO_LIGADA_MS) {
-                l.brilho = 0; // Apagamento Binário (sem fade)
+            } else {
+                // Se o tempo passou, apaga na hora (sem fade)
+                if (agora - l.ultimoTrigger > CONFIG.TEMPO_LIGADA_MS) {
+                    l.brilho = 0;
+                }
             }
         }
     });
 }
+
+// ... (Mantenha as funções desenhar(), atualizarMovimento() e calcularRota() como estavam)
 
 // Funções de Movimento e Desenho (Mesmo anterior, apenas integrando as novas regras de brilho)
 function atualizarMovimento() {
