@@ -1,13 +1,13 @@
 /* config.js - V4 */
 const CONFIG = {
-    LAMPADAS_VERTICAL: 7,    
-    LAMPADAS_HORIZONTAL: 3,  
-    ESPACO_LAMPADA: 36,      
-    NUM_EIXOS_V: 10,          
+    LAMPADAS_VERTICAL: 4,    
+    LAMPADAS_HORIZONTAL: 2,  
+    ESPACO_LAMPADA: 60,      
+    NUM_EIXOS_V: 9,          
     NUM_EIXOS_H: 4,         
-    MARGEM: 60,
+    MARGEM: 30,
 
-    VELOCIDADE_OPERADOR: 2,  
+    VELOCIDADE_OPERADOR: 3,  
     
     // Configurações Físicas
     RAIO_DETECCAO: 10,        
